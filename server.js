@@ -46,4 +46,9 @@ app.put('/tasks/:id', (req, res) => {
   res.json(task);
 });
 
+app.delete('/tasks/:id', (req, res) => {
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
