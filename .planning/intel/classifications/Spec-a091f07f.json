@@ -1,0 +1,22 @@
+{
+  "source_path": "F:\\simpleKanbanapp\\Docs\\Spec.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Design: Simple Kanban Practice App",
+  "summary": "Technical specification for a minimal Kanban board app built with Node.js, Express, pg, and vanilla HTML to practice HTTP verbs, SQL, and frontend-backend communication.",
+  "scope": [
+    "Express server",
+    "PostgreSQL database",
+    "tasks table",
+    "CRUD API endpoints",
+    "Kanban board frontend",
+    "vanilla HTML/CSS/JS"
+  ],
+  "cross_refs": [
+    "Hp-unknown-design-20260505-202841.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

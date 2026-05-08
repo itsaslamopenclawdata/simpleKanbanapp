@@ -1,0 +1,95 @@
+You are running UNATTENDED in a headless Ralph Loop. The user is asleep. You will not get clarifying answers.
+
+## Decision policy (mandatory)
+
+1. **For ANY decision point, AskUserQuestion-style prompt, or "should I X or Y?" branch:**
+   - Spawn ALL relevant gstack advisors IN PARALLEL via the Task/Skill tool:
+     - `/plan-ceo-review` (product/scope decisions)
+     - `/plan-eng-review` (technical/architecture decisions)
+     - `/cso` (security/risk decisions)
+     - `/plan-design-review` (UX/UI decisions)
+   - Use only those that apply to the decision at hand.
+   - Adopt the option recommended by the **MAJORITY** of advisors.
+   - Tie → pick the option with the **smallest blast radius** (least irreversible, smallest scope, easiest to revert).
+   - Log the vote tally + rationale in the session output.
+
+2. **NEVER call `AskUserQuestion`. NEVER block waiting for the user.**
+
+3. **HARD HUMAN GATE** (production cutover, irreversible destructive action, secrets rotation, DNS changes against production, dropping a database, force-pushing main, etc.):
+   - **STOP. Do NOT auto-confirm.**
+   - Print exactly: `HUMAN GATE TRIPPED: <one-line reason>`
+   - Exit non-zero.
+   - The orchestrator will detect this in the log and notify the user.
+
+4. **Honor the per-session 14-gate contract** from `docs/BUILD-PROMPTS.md` (TDD, atomic commits, lint/typecheck/test green, etc.). Plan-only sessions skip gates 3-7 (execution + tests). Review-only sessions skip gates 1-7.
+
+5. **After completing all session work, you MUST:**
+   a. Verify all applicable gates green (lint, typecheck, tests for execute sessions).
+   b. Make a final commit: `chore(loop): Session <N> done — <one-line summary>`.
+   c. Stop. Do **NOT** flip the checkbox in `docs/BUILD-PROMPTS.md` — the orchestrator will do that after merging your branch.
+   d. Do **NOT** advance to the next session. The orchestrator handles dispatch.
+
+## Failure mode
+
+If you cannot satisfy any gate (test fails, lint won't pass, typecheck error you can't resolve, missing dependency you can't install, scope decision genuinely requires the user):
+
+- **STOP.** Do not commit a "done" marker.
+- Make a partial-progress commit if work is salvageable: `wip(loop): Session <N> partial — <reason for stop>`.
+- Exit non-zero.
+
+The orchestrator will halt and notify the user with the log tail. Your worktree stays intact for human inspection.
+
+## Working environment
+
+- You are in a git worktree at `.worktrees/session-<N>` on branch `loop/session-<N>`.
+- The main repo `main` branch is your starting point.
+- Other workers may be running concurrently in sibling worktrees on different branches. Don't read or write outside your own worktree.
+- Logs go to `.planning/build-loop-logs/session-<N>.log` (auto-captured by stdout/stderr redirect).
+
+---
+
+SESSION PROMPT FOLLOWS:
+---
+
+Skills: superpowers:using-superpowers, superpowers:incremental-implementation,
+        superpowers:verification-before-completion
+
+Working directory: <inherit>
+
+Pre-flight (Gate -1):
+- PostgreSQL must be running locally:
+  psql -U postgres -c "SELECT version();" > /dev/null 2>&1
+- If check fails → STOP and emit:
+  HUMAN GATE TRIPPED: PostgreSQL not running — start it before continuing
+
+This session creates the project skeleton and database (INF-03, INF-02, DB-01, DB-02).
+
+Reference docs (read before Task 1):
+1. .planning/REQUIREMENTS.md (full requirements)
+2. Docs/Spec.md (original specification)
+
+Scope (4 tasks, strict order):
+- Task 1: Run `npm init -y` and install dependencies (express, pg)
+- Task 2: Create PostgreSQL database `kanban_practice` and `tasks` table
+  (id SERIAL PRIMARY KEY, title VARCHAR(255) NOT NULL,
+   status VARCHAR(20) DEFAULT 'todo', created_at TIMESTAMP DEFAULT NOW())
+- Task 3: Seed database with 3 sample tasks — one per status ('todo', 'in_progress', 'done')
+- Task 4: Create minimal server.js stub that starts Express on port 3000
+  and connects to PostgreSQL (hardcoded: host=localhost, port=5432,
+  user=postgres, password=postgres, database=kanban_practice)
+
+Execution rules:
+- Each task: implement → verify → commit. One commit per task.
+- No linting or testing (spec excludes both).
+- Keep code minimal — no comments, no error handling, no env vars.
+
+After all tasks close:
+- Verify: `node server.js` starts without errors, `psql -U postgres -d kanban_practice -c "SELECT * FROM tasks;"` returns 3 rows.
+- Final commit: `chore(loop): Session 1 done — project scaffolding + database`.
+- STOP.
+
+---
+Working directory: F:/simpleKanbanapp/.worktrees/session-1
+Branch: loop/session-1
+Final commit MUST be: chore(loop): Session 1 done — <one-line summary>
+After that commit, STOP. Do not flip the checkbox in IDEA_BUILD_PROMPTS.md — the orchestrator handles that on merge.
