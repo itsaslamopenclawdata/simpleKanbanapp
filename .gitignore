@@ -1,3 +1,4 @@
 node_modules/
 kanban.db
 .claude/
+.worktrees/
