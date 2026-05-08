@@ -24,6 +24,7 @@ if (count.c === 0) {
   insert.run('Create the frontend', 'todo');
 }
 
+app.use(express.json());
 app.use(express.static(__dirname));
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
