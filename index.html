@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kanban Board</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    #board {
+      display: flex;
+      gap: 20px;
+    }
+    .column {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .column h2 {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #333;
+    }
+    .card {
+      background: #f9f9f9;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      margin-bottom: 8px;
+    }
+    .card select,
+    .card button {
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .card .delete-btn {
+      margin-left: 8px;
+      color: red;
+      cursor: pointer;
+    }
+    #taskInput,
+    #addBtn {
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+    h1 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kanban Board</h1>
+  <div>
+    <input type="text" id="taskInput" placeholder="New task...">
+    <button id="addBtn" onclick="addTask()">Add Task</button>
+  </div>
+  <div id="board">
+    <div class="column">
+      <h2>To Do</h2>
+      <div id="todo-tasks"></div>
+    </div>
+    <div class="column">
+      <h2>In Progress</h2>
+      <div id="in_progress-tasks"></div>
+    </div>
+    <div class="column">
+      <h2>Done</h2>
+      <div id="done-tasks"></div>
+    </div>
+  </div>
+  <script>
+    function fetchTasks() {
+      fetch('/tasks')
+        .then(function(r) { return r.json(); })
+        .then(function(tasks) {
+          var todo = tasks.filter(function(t) { return t.status === 'todo'; });
+          var in_progress = tasks.filter(function(t) { return t.status === 'in_progress'; });
+          var done = tasks.filter(function(t) { return t.status === 'done'; });
+          renderCards('todo-tasks', todo);
+          renderCards('in_progress-tasks', in_progress);
+          renderCards('done-tasks', done);
+        });
+    }
+
+    function renderCards(containerId, tasks) {
+      var container = document.getElementById(containerId);
+      container.innerHTML = '';
+      tasks.forEach(function(task) {
+        var card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML =
+          '<div class="card-title">' + task.title + '</div>' +
+          '<select onchange="updateTask(' + task.id + ', this.value)">' +
+            '<option value="todo"' + (task.status === 'todo' ? ' selected' : '') + '>To Do</option>' +
+            '<option value="in_progress"' + (task.status === 'in_progress' ? ' selected' : '') + '>In Progress</option>' +
+            '<option value="done"' + (task.status === 'done' ? ' selected' : '') + '>Done</option>' +
+          '</select>' +
+          '<button class="delete-btn" onclick="deleteTask(' + task.id + ')">Delete</button>';
+        container.appendChild(card);
+      });
+    }
+
+    function addTask() {
+      var input = document.getElementById('taskInput');
+      var title = input.value.trim();
+      if (!title) return;
+      fetch('/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title })
+      }).then(function() {
+        input.value = '';
+        fetchTasks();
+      });
+    }
+
+    function updateTask(id, status) {
+      fetch('/tasks/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+      }).then(function() { fetchTasks(); });
+    }
+
+    function deleteTask(id) {
+      fetch('/tasks/' + id, {
+        method: 'DELETE'
+      }).then(function() { fetchTasks(); });
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchTasks);
+  </script>
+</body>
+</html>
