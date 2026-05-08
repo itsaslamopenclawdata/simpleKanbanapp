@@ -27,4 +27,9 @@ if (count.c === 0) {
 app.use(express.json());
 app.use(express.static(__dirname));
 
+app.get('/tasks', (req, res) => {
+  const tasks = db.prepare('SELECT * FROM tasks ORDER BY created_at').all();
+  res.json(tasks);
+});
+
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
