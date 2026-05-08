@@ -39,4 +39,11 @@ app.post('/tasks', (req, res) => {
   res.json(task);
 });
 
+app.put('/tasks/:id', (req, res) => {
+  const { status } = req.body;
+  db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, req.params.id);
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+  res.json(task);
+});
+
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
