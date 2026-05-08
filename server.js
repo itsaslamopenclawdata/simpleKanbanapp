@@ -32,4 +32,11 @@ app.get('/tasks', (req, res) => {
   res.json(tasks);
 });
 
+app.post('/tasks', (req, res) => {
+  const { title } = req.body;
+  const result = db.prepare('INSERT INTO tasks (title) VALUES (?)').run(title);
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
+  res.json(task);
+});
+
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
